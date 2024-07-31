@@ -37,9 +37,10 @@ export interface IDecision {
 }
 
 export interface IRace {
-    played: boolean;
     raceNumber: number;
     systemBalance: number;
+    betDuration: number;
+    played: boolean;
     date: Date;
     dogs: Dogs;
     tickets: Tickets;
@@ -98,18 +99,20 @@ type Dogs = Map<number, DogInfo>;
 
 type Tickets = Map<string, Ticket>;
 
-const GAME_DELAY = 5 * 1000;
-
 export default class GreyhoundRace implements IRace {
     raceNumber: number = 100;
     systemBalance: number = 0;
-    date: Date = new Date(Date.now() + GAME_DELAY);
+    betDuration: number;
+    date: Date;
     dogs: Dogs = new Map();
     tickets: Tickets = new Map();
     result: RaceResult = {first: 0, second: 0, third: 0, winnersCount: 0, totalAmount: 0};
     played = false;
 
-    constructor() {
+    constructor(betDuration = 3 * 60 * 1000) {
+        this.betDuration = betDuration;
+        this.date = new Date(Date.now() + this.betDuration);
+
         const dogs = [
             {
                 number: 1,
@@ -193,7 +196,7 @@ export default class GreyhoundRace implements IRace {
     nextGame() {
         this.raceNumber++;
         this.played = false;
-        this.date = new Date(Date.now() + GAME_DELAY);
+        this.date = new Date(Date.now() + this.betDuration);
         this.tickets.clear();
         this.result = {first: 0, second: 0, third: 0, totalAmount: 0, winnersCount: 0};
     }

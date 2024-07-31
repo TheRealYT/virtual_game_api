@@ -2,7 +2,7 @@ import path from 'node:path';
 import fss from 'node:fs';
 import fs from 'node:fs/promises';
 
-import {IRace} from './game/GreyhoundRace';
+import {IRace} from '../game/GreyhoundRace';
 
 export interface IStore {
     save(race: IRace): Promise<void>;

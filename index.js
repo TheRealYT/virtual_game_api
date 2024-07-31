@@ -22,8 +22,53 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// src/main.ts
+// src/api/GameLoop.ts
 var import_node_events = require("node:events");
+
+// src/api/Store.ts
+var import_node_path = __toESM(require("node:path"));
+var import_node_fs = __toESM(require("node:fs"));
+var import_promises = __toESM(require("node:fs/promises"));
+var Store = class {
+  OUT_DIR = import_node_path.default.join(__dirname, "store");
+  async mkdir() {
+    if (!import_node_fs.default.existsSync(this.OUT_DIR)) {
+      await import_promises.default.mkdir(this.OUT_DIR);
+    }
+  }
+  async save(race) {
+    await this.mkdir();
+    const outFile = import_node_path.default.join(this.OUT_DIR, `${race.raceNumber}.json`);
+    await import_promises.default.writeFile(outFile, race.getState(false));
+  }
+  async load(raceNumber) {
+    const filepath = import_node_path.default.join(this.OUT_DIR, raceNumber.toString() + ".json");
+    if (!import_node_fs.default.existsSync(filepath)) {
+      throw new Error("Race not found");
+    }
+    try {
+      const text = await import_promises.default.readFile(filepath);
+      return JSON.parse(text.toString());
+    } catch (e) {
+      throw new Error("Race store file corrupted, please report to the developer");
+    }
+  }
+  async getAllRaceNumbers() {
+    const raceNum = [];
+    if (import_node_fs.default.existsSync(this.OUT_DIR))
+      try {
+        const files = await import_promises.default.readdir(this.OUT_DIR);
+        const regExp = new RegExp(/^([0-9]+)\.json$/);
+        for (const file of files) {
+          const matches = regExp.exec(file);
+          if (matches == null) continue;
+          raceNum.push(+matches[1]);
+        }
+      } catch (e) {
+      }
+    return raceNum.sort((a, b) => a - b);
+  }
+};
 
 // node_modules/uuid/dist/esm-node/stringify.js
 var byteToHex = [];
@@ -183,16 +228,18 @@ var Race = class {
     return result;
   }
 };
-var GAME_DELAY = 5 * 1e3;
 var GreyhoundRace = class {
   raceNumber = 100;
   systemBalance = 0;
-  date = new Date(Date.now() + GAME_DELAY);
+  betDuration;
+  date;
   dogs = /* @__PURE__ */ new Map();
   tickets = /* @__PURE__ */ new Map();
   result = { first: 0, second: 0, third: 0, winnersCount: 0, totalAmount: 0 };
   played = false;
-  constructor() {
+  constructor(betDuration = 3 * 60 * 1e3) {
+    this.betDuration = betDuration;
+    this.date = new Date(Date.now() + this.betDuration);
     const dogs = [
       {
         number: 1,
@@ -271,7 +318,7 @@ var GreyhoundRace = class {
   nextGame() {
     this.raceNumber++;
     this.played = false;
-    this.date = new Date(Date.now() + GAME_DELAY);
+    this.date = new Date(Date.now() + this.betDuration);
     this.tickets.clear();
     this.result = { first: 0, second: 0, third: 0, totalAmount: 0, winnersCount: 0 };
   }
@@ -332,53 +379,7 @@ var GreyhoundRace = class {
   }
 };
 
-// src/Store.ts
-var import_node_path = __toESM(require("node:path"));
-var import_node_fs = __toESM(require("node:fs"));
-var import_promises = __toESM(require("node:fs/promises"));
-var Store = class {
-  OUT_DIR = import_node_path.default.join(__dirname, "store");
-  async mkdir() {
-    if (!import_node_fs.default.existsSync(this.OUT_DIR)) {
-      await import_promises.default.mkdir(this.OUT_DIR);
-    }
-  }
-  async save(race) {
-    await this.mkdir();
-    const outFile = import_node_path.default.join(this.OUT_DIR, `${race.raceNumber}.json`);
-    await import_promises.default.writeFile(outFile, race.getState(false));
-  }
-  async load(raceNumber) {
-    const filepath = import_node_path.default.join(this.OUT_DIR, raceNumber.toString() + ".json");
-    if (!import_node_fs.default.existsSync(filepath)) {
-      throw new Error("Race not found");
-    }
-    try {
-      const text = await import_promises.default.readFile(filepath);
-      return JSON.parse(text.toString());
-    } catch (e) {
-      throw new Error("Race store file corrupted, please report to the developer");
-    }
-  }
-  async getAllRaceNumbers() {
-    const raceNum = [];
-    if (import_node_fs.default.existsSync(this.OUT_DIR))
-      try {
-        const files = await import_promises.default.readdir(this.OUT_DIR);
-        const regExp = new RegExp(/^([0-9]+)\.json$/);
-        for (const file of files) {
-          const matches = regExp.exec(file);
-          if (matches == null) continue;
-          raceNum.push(+matches[1]);
-        }
-      } catch (e) {
-      }
-    return raceNum.sort((a, b) => a - b);
-  }
-};
-
-// src/main.ts
-var MIN = 10;
+// src/api/GameLoop.ts
 var Statuses = class _Statuses {
   static STATUS_GAME = "gameStatus";
   static GAME_STARTED = { name: _Statuses.STATUS_GAME, status: "gameStarted" };
@@ -457,7 +458,10 @@ var GameLoop = class extends import_node_events.EventEmitter {
     }
   }
 };
-var GameAPI = class {
+
+// src/api/GameController.ts
+var MIN_BET_AMOUNT = 10;
+var GameController = class {
   gameLoop;
   constructor(gameLoop2) {
     this.gameLoop = gameLoop2;
@@ -474,7 +478,7 @@ var GameAPI = class {
     for (const obj of objs) {
       if (obj?.type !== "place" && obj?.type !== "win")
         throw new Error("Invalid bet type");
-      if (typeof obj?.amount != "number" || obj.amount < MIN)
+      if (typeof obj?.amount != "number" || obj.amount < MIN_BET_AMOUNT)
         throw new Error(`Invalid cash amount`);
       if (this.gameLoop.race.dogs.get(obj.dogNumber) == void 0)
         throw new Error(`Invalid dog`);
@@ -485,6 +489,8 @@ var GameAPI = class {
     return this.gameLoop.race.placeBet(bets);
   }
 };
+
+// src/main.ts
 var gameLoop = new GameLoop();
-var gameAPI = new GameAPI(gameLoop);
+var gameAPI = new GameController(gameLoop);
 gameLoop.init().then(() => gameLoop.startLoop());
