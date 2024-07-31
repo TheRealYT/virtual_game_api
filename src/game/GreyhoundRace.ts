@@ -12,6 +12,13 @@ export interface DogInfo {
     racesSinceLastPlace: number;
 }
 
+export interface Result {
+    first: number;
+    second: number;
+    third: number;
+    raceNumber: number,
+}
+
 export interface RaceResult {
     first: number;
     second: number;
@@ -36,6 +43,16 @@ export interface IDecision {
     decide(dogs: Dogs, results: RaceResult[]): RaceResult;
 }
 
+export type RaceState = {
+    date: Date,
+    raceNumber: number,
+    systemBalance: number,
+    dogs: DogInfo[],
+    tickets: Ticket[],
+    result: RaceResult,
+    played: boolean
+};
+
 export interface IRace {
     raceNumber: number;
     systemBalance: number;
@@ -52,7 +69,7 @@ export interface IRace {
 
     getPrediction(): DogInfo[];
 
-    getState(raw?: boolean): string | {};
+    getState(raw?: boolean): string | RaceState;
 
     loadState(prev: any): boolean;
 
