@@ -12,7 +12,6 @@ export default class GameServer {
         this.socket = socket;
 
         gameLoop.on('update', (update: Update, data?: {}) => {
-            // TODO: broadcast
             socket.broadcast({update, data});
             console.log(update);
         });
