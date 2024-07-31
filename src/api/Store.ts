@@ -3,6 +3,7 @@ import fss from 'node:fs';
 import fs from 'node:fs/promises';
 
 import {IRace} from '../game/GreyhoundRace';
+import {InputError} from './GameController';
 
 export interface IStore {
     save(race: IRace): Promise<void>;
@@ -32,7 +33,7 @@ export default class Store implements IStore {
     async load(raceNumber: number): Promise<{}> {
         const filepath = path.join(this.OUT_DIR, raceNumber.toString() + '.json');
         if (!fss.existsSync(filepath)) {
-            throw new Error('Race not found');
+            throw new InputError('Race not found');
         }
 
         try {
