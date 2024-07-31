@@ -48,7 +48,7 @@ export default class Socket implements ISocket {
                 return;
             }
 
-            const listen = this.#server.listen(undefined, '127.0.0.1', undefined, () => {
+            const listen = this.#server.listen(this.port, '127.0.0.1', undefined, () => {
                 const data = listen.address() as AddressInfo;
                 this.#port = data.port;
 
