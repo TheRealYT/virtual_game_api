@@ -1,8 +1,12 @@
-import {createServer} from 'http';
-import {WebSocketServer} from 'ws';
 import {AddressInfo} from 'node:net';
+import {createServer} from 'node:http';
+
+import WebSocket, {WebSocketServer} from 'ws';
+import express, {Application} from 'express';
 
 export interface ISocket {
+    app: Application;
+
     start(): Promise<void>;
 
     broadcast(message: any): void;
@@ -12,28 +16,36 @@ export interface ISocket {
     get clientsCount(): number;
 }
 
-export class LiveSocket implements ISocket {
+export default class Socket implements ISocket {
+    app: Application;
+
     #server;
     #ws;
-    #port: number = 0;
 
-    constructor(server = createServer()) {
-        const wss = new WebSocketServer({server});
+    #port;
+
+    constructor(server = createServer(), port: number = 0) {
+        this.#port = port;
         this.#server = server;
-        this.#ws = wss;
 
+        this.app = express();
+        server.addListener('request', this.app);
+
+        const wss = new WebSocketServer({server});
         wss.on('connection', client => {
             const source = {id: crypto.randomUUID()};
             Object.assign(client, source);
 
             client.on('error', console.error);
         });
+        this.#ws = wss;
     }
 
     async start(): Promise<void> {
         return new Promise(res => {
             if (this.#server.listening) {
                 this.#port = (this.#server.address() as AddressInfo).port;
+                return;
             }
 
             const listen = this.#server.listen(undefined, '127.0.0.1', undefined, () => {
@@ -47,7 +59,8 @@ export class LiveSocket implements ISocket {
 
     broadcast(message: any): void {
         for (const client of this.#ws.clients)
-            client.send(JSON.stringify(message));
+            if (client.readyState === WebSocket.OPEN)
+                client.send(JSON.stringify(message));
     }
 
     get port(): number {

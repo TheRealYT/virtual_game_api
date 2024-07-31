@@ -1,15 +1,13 @@
 import GameLoop from './api/GameLoop';
-import GameController from './api/GameController';
-import {LiveSocket} from './api/Socket';
+import GameServer from './api/GameServer';
+import Socket from './api/Socket';
 
 const gameLoop = new GameLoop();
-const liveSocket = new LiveSocket();
-const gameController = new GameController(gameLoop, liveSocket);
+const socket = new Socket();
+const gameServer = new GameServer(gameLoop, socket);
 
-liveSocket.start().then(() => {
-    console.log(liveSocket.port);
+gameServer.init().then(async () => {
+    console.log(socket.port);
 
-    setTimeout(() => {
-        gameLoop.init().then(() => gameLoop.startLoop());
-    }, 10_000);
+    await gameLoop.startLoop();
 });
