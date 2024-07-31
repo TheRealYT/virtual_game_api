@@ -44,31 +44,24 @@ export default class GameController {
         return ticket;
     }
 
-    async getRace(raceNumber: string): Promise<{}> {
-        const race = (await this.getRaceInstance(raceNumber)).getState(true) as RaceState;
-
-        return {
-            date: race.date,
-            raceNumber: race.raceNumber,
-            dogs: race.dogs,
-        };
-    }
-
     async getRaceInstance(raceNumber: string): Promise<IRace> {
-        if (!/^[0-9]+$/.test(raceNumber))
-            throw new InputError('Invalid race number');
+        if (raceNumber == 'current' || raceNumber == this.gameLoop.race.raceNumber.toString())
+            return this.gameLoop.race;
 
-        if (raceNumber != 'current' && raceNumber != this.gameLoop.race.raceNumber.toString()) {
-            const state = await this.gameLoop.store.load(+raceNumber);
-            const greyhoundRace = new GreyhoundRace();
-
-            if (!greyhoundRace.loadState(state))
-                throw new InputError('Race not loaded');
-
-            return greyhoundRace;
+        if (raceNumber == 'next') {
+            return this.gameLoop.race; // TODO: implement next race logic
         }
 
-        return this.gameLoop.race;
+        if (!(/^[0-9]+$/).test(raceNumber))
+            throw new InputError('Invalid race number');
+
+        const state = await this.gameLoop.store.load(+raceNumber);
+        const greyhoundRace = new GreyhoundRace();
+
+        if (!greyhoundRace.loadState(state))
+            throw new InputError('Race not loaded');
+
+        return greyhoundRace;
     }
 
     getNextRace() {
