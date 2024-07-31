@@ -1,15 +1,20 @@
 import GameLoop, {Statuses, Update} from './GameLoop';
 import {Bet} from '../game/GreyhoundRace';
+import {ISocket} from './Socket';
 
 export const MIN_BET_AMOUNT = 10;
 
 export default class GameController {
     gameLoop: GameLoop;
+    socket: ISocket;
 
-    constructor(gameLoop: GameLoop) {
+    constructor(gameLoop: GameLoop, socket: ISocket) {
         this.gameLoop = gameLoop;
+        this.socket = socket;
+
         gameLoop.on('update', (update: Update, data?: {}) => {
             // TODO: broadcast
+            socket.broadcast({update, data});
             console.log(update);
         });
     }
