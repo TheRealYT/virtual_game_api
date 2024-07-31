@@ -62,14 +62,12 @@ export default class GameLoop extends EventEmitter {
     }
 
     async startLoop() {
-        const save = () => this.store.save(this.race);
-
         const startResultTimeout = (timeout = this.race.date.getTime() - Date.now()) => {
             return new Promise(res => {
 
                 setTimeout(async () => {
                     this.race.run();
-                    await save();
+                    await this.save();
 
                     res(undefined);
                 }, timeout);
@@ -79,11 +77,12 @@ export default class GameLoop extends EventEmitter {
         const play = async () => {
             this.#emmitUpdate(Statuses.GAME_STARTED);
             // TODO: play video, stream, or emmit duration
-            await new Promise(res => setTimeout(res, 3_000));
+            await new Promise(res => setTimeout(res, 30_000));
 
             this.race.played = true;
-            await save();
+            await this.save();
             this.#emmitUpdate(Statuses.GAME_ENDED);
+            await new Promise(res => setTimeout(res, 15_000));
         };
 
         if (this.race.isClosed() && !this.race.hasResult()) {
@@ -99,11 +98,15 @@ export default class GameLoop extends EventEmitter {
 
         while (this.loop) {
             this.race.nextGame();
-            await save();
+            await this.save();
             this.#emmitUpdate(Statuses.BETS_OPENED);
             await startResultTimeout();
             this.#emmitUpdate(Statuses.BETS_CLOSED);
             await play();
         }
+    }
+
+    async save() {
+        await this.store.save(this.race);
     }
 }
