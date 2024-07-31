@@ -7,7 +7,7 @@ import {IRace} from '../game/GreyhoundRace';
 export interface IStore {
     save(race: IRace): Promise<void>;
 
-    load(raceNumber: number): Promise<void>;
+    load(raceNumber: number): Promise<{}>;
 
     getAllRaceNumbers(): Promise<number[]>;
 }
@@ -29,7 +29,7 @@ export default class Store implements IStore {
         await fs.writeFile(outFile, race.getState(false) as string); // TODO: encrypt
     }
 
-    async load(raceNumber: number): Promise<void> {
+    async load(raceNumber: number): Promise<{}> {
         const filepath = path.join(this.OUT_DIR, raceNumber.toString() + '.json');
         if (!fss.existsSync(filepath)) {
             throw new Error('Race not found');
