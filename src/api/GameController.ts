@@ -1,5 +1,5 @@
 import GameLoop, {Statuses} from './GameLoop';
-import {Bet, IRace, RaceState, Result, Ticket} from '../game/GreyhoundRace';
+import GreyhoundRace, {Bet, IRace, RaceState, Result, Ticket} from '../game/GreyhoundRace';
 
 export const MIN_BET_AMOUNT = 10;
 
@@ -44,12 +44,8 @@ export default class GameController {
         return ticket;
     }
 
-    async getRace(raceNumber: string | number): Promise<{}> {
-        // TODO: getRaceByNumber
-        if (raceNumber !== 'current')
-            throw new InputError('Race not found');
-
-        const race = this.gameLoop.race.getState(true) as RaceState;
+    async getRace(raceNumber: string): Promise<{}> {
+        const race = (await this.getRaceInstance(raceNumber)).getState(true) as RaceState;
 
         return {
             date: race.date,
@@ -58,10 +54,19 @@ export default class GameController {
         };
     }
 
-    async getRaceInstance(raceNumber: string | number): Promise<IRace> {
-        // TODO: getRaceByNumber
-        if (raceNumber !== 'current')
-            throw new InputError('Race not found');
+    async getRaceInstance(raceNumber: string): Promise<IRace> {
+        if (!/^[0-9]+$/.test(raceNumber))
+            throw new InputError('Invalid race number');
+
+        if (raceNumber != 'current' && raceNumber != this.gameLoop.race.raceNumber.toString()) {
+            const state = await this.gameLoop.store.load(+raceNumber);
+            const greyhoundRace = new GreyhoundRace();
+
+            if (!greyhoundRace.loadState(state))
+                throw new InputError('Race not loaded');
+
+            return greyhoundRace;
+        }
 
         return this.gameLoop.race;
     }
