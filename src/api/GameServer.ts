@@ -39,9 +39,9 @@ export default class GameServer {
     }
 
     #addController() {
-        this.socket.app.post('/tickets/place', (req: Request, res: Response, next: NextFunction) => {
+        this.socket.app.put('/tickets/place', (req: Request, res: Response, next: NextFunction) => {
             this.controller.placeBet(req.body)
-                .then(ticket => res.status(200).json({ticket}))
+                .then(ticket => res.status(201).json({ticket}))
                 .catch(next);
         });
 
