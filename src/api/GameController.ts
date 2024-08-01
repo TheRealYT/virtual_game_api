@@ -76,10 +76,15 @@ export default class GameController {
         return [];
     }
 
-    async getVideo(): Promise<string> {
+    async getVideo(): Promise<{ stream: string, startedAt?: Date }> {
         if (this.gameLoop.getUpdateStatus(Statuses.STATUS_GAME) != Statuses.GAME_STARTED.status)
-            throw new InputError('Game is not started');
+            throw new InputError('Game streaming is not started');
 
-        return `${this.gameLoop.race.result.first}${this.gameLoop.race.result.second}${this.gameLoop.race.result.third}`;
+        const startedAt = this.gameLoop.getUpdateData(Statuses.STATUS_GAME);
+
+        return {
+            stream: `${this.gameLoop.race.result.first}${this.gameLoop.race.result.second}${this.gameLoop.race.result.third}`,
+            startedAt,
+        };
     }
 }

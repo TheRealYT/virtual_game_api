@@ -23,7 +23,7 @@ export default class GameLoop extends EventEmitter {
     store: IStore;
     loop = true;
 
-    #updates: Map<string, string> = new Map();
+    #updates: Map<string, { status: string, data: any }> = new Map();
 
     constructor(race: IRace = new GreyhoundRace(), store: IStore = new Store()) {
         super({captureRejections: true});
@@ -33,12 +33,16 @@ export default class GameLoop extends EventEmitter {
     }
 
     #emmitUpdate(update: Update, data?: {}) {
-        this.#updates.set(update.name, update.status);
+        this.#updates.set(update.name, {status: update.status, data});
         this.emit('update', update, data);
     }
 
     getUpdateStatus(updateName: string): string {
-        return this.#updates.get(updateName) ?? 'unknown';
+        return this.#updates.get(updateName)?.status ?? 'unknown';
+    }
+
+    getUpdateData(updateName: string): any | undefined {
+        return this.#updates.get(updateName)?.data;
     }
 
     async init() {
@@ -76,8 +80,7 @@ export default class GameLoop extends EventEmitter {
         };
 
         const play = async () => {
-            this.#emmitUpdate(Statuses.GAME_STARTED);
-            // TODO: play video, stream, or emmit duration
+            this.#emmitUpdate(Statuses.GAME_STARTED, new Date());
             await new Promise(res => setTimeout(res, PLAY_TIME));
 
             this.race.played = true;

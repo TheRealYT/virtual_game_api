@@ -42,7 +42,7 @@ export default class GameServer {
     #addController() {
         this.socket.app.get('/race/watch', (_req: Request, res: Response, next: NextFunction) => {
             this.controller.getVideo()
-                .then(stream => res.status(200).json({stream}))
+                .then(stream => res.status(200).json(stream))
                 .catch(next);
         });
 
