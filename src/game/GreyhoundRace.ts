@@ -1,6 +1,7 @@
 import {v7 as uuid} from 'uuid';
 
 import {getWinnerOrders} from './Maths';
+import {BET_OPEN_TIME} from './Constants';
 
 export interface DogInfo {
     number: number;
@@ -56,7 +57,6 @@ export type RaceState = {
 export interface IRace {
     raceNumber: number;
     systemBalance: number;
-    betDuration: number;
     played: boolean;
     date: Date;
     dogs: Dogs;
@@ -119,16 +119,14 @@ type Tickets = Map<string, Ticket>;
 export default class GreyhoundRace implements IRace {
     raceNumber: number = 100;
     systemBalance: number = 0;
-    betDuration: number;
     date: Date;
     dogs: Dogs = new Map();
     tickets: Tickets = new Map();
     result: RaceResult = {first: 0, second: 0, third: 0, winnersCount: 0, totalAmount: 0};
     played = false;
 
-    constructor(betDuration = 3 * 60 * 1000) {
-        this.betDuration = betDuration;
-        this.date = new Date(Date.now() + this.betDuration);
+    constructor() {
+        this.date = new Date(Date.now() + BET_OPEN_TIME);
 
         const dogs = [
             {
@@ -137,8 +135,8 @@ export default class GreyhoundRace implements IRace {
                 formRating: 3.91,
                 winOdd: 3.91,
                 placeOdd: 1.91,
-                racesSinceLastWin: 1,
-                racesSinceLastPlace: 1,
+                racesSinceLastWin: 0,
+                racesSinceLastPlace: 0,
             },
             {
                 number: 2,
@@ -146,8 +144,8 @@ export default class GreyhoundRace implements IRace {
                 formRating: 7.22,
                 winOdd: 3.05,
                 placeOdd: 1.55,
-                racesSinceLastWin: 2,
-                racesSinceLastPlace: 3,
+                racesSinceLastWin: 0,
+                racesSinceLastPlace: 0,
             },
             {
                 number: 3,
@@ -155,8 +153,8 @@ export default class GreyhoundRace implements IRace {
                 formRating: 4.67,
                 winOdd: 4.67,
                 placeOdd: 2.67,
-                racesSinceLastWin: 3,
-                racesSinceLastPlace: 5,
+                racesSinceLastWin: 0,
+                racesSinceLastPlace: 0,
             },
             {
                 number: 4,
@@ -164,8 +162,8 @@ export default class GreyhoundRace implements IRace {
                 formRating: 5.50,
                 winOdd: 2.50,
                 placeOdd: 1.50,
-                racesSinceLastWin: 4,
-                racesSinceLastPlace: 4,
+                racesSinceLastWin: 0,
+                racesSinceLastPlace: 0,
             },
             {
                 number: 5,
@@ -173,8 +171,8 @@ export default class GreyhoundRace implements IRace {
                 formRating: 6.79,
                 winOdd: 1.79,
                 placeOdd: 1.29,
-                racesSinceLastWin: 1,
-                racesSinceLastPlace: 2,
+                racesSinceLastWin: 0,
+                racesSinceLastPlace: 0,
             },
             {
                 number: 6,
@@ -182,8 +180,8 @@ export default class GreyhoundRace implements IRace {
                 formRating: 3.14,
                 winOdd: 2.14,
                 placeOdd: 1.14,
-                racesSinceLastWin: 5,
-                racesSinceLastPlace: 3,
+                racesSinceLastWin: 0,
+                racesSinceLastPlace: 0,
             },
         ];
 
@@ -213,7 +211,7 @@ export default class GreyhoundRace implements IRace {
     nextGame() {
         this.raceNumber++;
         this.played = false;
-        this.date = new Date(Date.now() + this.betDuration);
+        this.date = new Date(Date.now() + BET_OPEN_TIME);
         this.tickets.clear();
         this.result = {first: 0, second: 0, third: 0, totalAmount: 0, winnersCount: 0};
     }
@@ -260,7 +258,7 @@ export default class GreyhoundRace implements IRace {
         if (typeof prev?.systemBalance == 'number')
             this.systemBalance = prev.systemBalance;
 
-        if (Array.isArray(prev?.dogs)) {
+        if (Array.isArray(prev?.dogs) && prev.dogs.length === 6) {
             this.dogs.clear();
 
             for (const dog of prev.dogs)

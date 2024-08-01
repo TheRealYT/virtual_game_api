@@ -1,5 +1,6 @@
 import GameLoop, {Statuses} from './GameLoop';
-import GreyhoundRace, {Bet, IRace, RaceState, Result, Ticket} from '../game/GreyhoundRace';
+import GreyhoundRace, {Bet, IRace, Result, Ticket} from '../game/GreyhoundRace';
+import {BET_OPEN_TIME, DELAY_AFTER_END, OLD_GAME_DELAY, PLAY_TIME} from '../game/Constants';
 
 export const MIN_BET_AMOUNT = 10;
 
@@ -48,9 +49,8 @@ export default class GameController {
         if (raceNumber == 'current' || raceNumber == this.gameLoop.race.raceNumber.toString())
             return this.gameLoop.race;
 
-        if (raceNumber == 'next') {
-            return this.gameLoop.race; // TODO: implement next race logic
-        }
+        if (raceNumber == 'next')
+            return await this.getNextRace();
 
         if (!(/^[0-9]+$/).test(raceNumber))
             throw new InputError('Invalid race number');
@@ -64,17 +64,22 @@ export default class GameController {
         return greyhoundRace;
     }
 
-    getNextRace() {
-        const race = this.gameLoop.race.getState(true) as RaceState;
+    async getNextRace(): Promise<IRace> {
+        const nextRace = new GreyhoundRace();
+        nextRace.date = new Date(this.gameLoop.race.date.getTime() + BET_OPEN_TIME + PLAY_TIME + DELAY_AFTER_END + OLD_GAME_DELAY);
+        nextRace.raceNumber = this.gameLoop.race.raceNumber + 1;
 
-        return {
-            date: race.date,
-            raceNumber: race.raceNumber + 1,
-            dogs: race.dogs,
-        };
+        return nextRace;
     }
 
     getResults(): Result[] {
         return [];
+    }
+
+    async getVideo(): Promise<string> {
+        if (this.gameLoop.getUpdateStatus(Statuses.STATUS_GAME) != Statuses.GAME_STARTED.status)
+            throw new InputError('Game is not started');
+
+        return `${this.gameLoop.race.result.first}${this.gameLoop.race.result.second}${this.gameLoop.race.result.third}`;
     }
 }

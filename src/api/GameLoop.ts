@@ -2,6 +2,7 @@ import {EventEmitter} from 'node:events';
 
 import Store, {IStore} from './Store';
 import GreyhoundRace, {IRace} from '../game/GreyhoundRace';
+import {DELAY_AFTER_END, OLD_GAME_DELAY, PLAY_TIME} from '../game/Constants';
 
 export interface Update {
     name: string;
@@ -77,17 +78,34 @@ export default class GameLoop extends EventEmitter {
         const play = async () => {
             this.#emmitUpdate(Statuses.GAME_STARTED);
             // TODO: play video, stream, or emmit duration
-            await new Promise(res => setTimeout(res, 30_000));
+            await new Promise(res => setTimeout(res, PLAY_TIME));
 
             this.race.played = true;
+
+            const standings = [this.race.result.second, this.race.result.third];
+            for (const dog of this.race.dogs.values()) {
+                if (dog.number == this.race.result.first) {
+                    dog.racesSinceLastWin = 0;
+                    dog.racesSinceLastPlace = 0;
+                    continue;
+                }
+
+                if (standings.includes(dog.number))
+                    dog.racesSinceLastPlace = 0;
+                else
+                    dog.racesSinceLastPlace++;
+
+                dog.racesSinceLastWin++;
+            }
+
             await this.save();
             this.#emmitUpdate(Statuses.GAME_ENDED);
-            await new Promise(res => setTimeout(res, 15_000));
+            await new Promise(res => setTimeout(res, DELAY_AFTER_END));
         };
 
         if (this.race.isClosed() && !this.race.hasResult()) {
             this.#emmitUpdate(Statuses.BETS_CLOSED);
-            await startResultTimeout(10_000);
+            await startResultTimeout(OLD_GAME_DELAY);
         } else {
             this.#emmitUpdate(Statuses.BETS_OPENED);
             await startResultTimeout();
