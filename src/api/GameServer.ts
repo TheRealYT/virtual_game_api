@@ -1,4 +1,5 @@
 import express, {Request, Response, NextFunction} from 'express';
+import cors from 'cors';
 
 import GameLoop, {Update} from './GameLoop';
 import {ISocket} from './Socket';
@@ -20,6 +21,7 @@ export default class GameServer {
             console.log(update);
         });
 
+        socket.app.use(cors());
         socket.app.use(express.json());
 
         this.#addController();
