@@ -87,4 +87,18 @@ export default class GameController {
             startedAt,
         };
     }
+
+    async getGameStatus() {
+        const update = this.gameLoop.getUpdate(Statuses.STATUS_GAME);
+        if (update == undefined)
+            throw new InputError('Status not found');
+
+        return {
+            update: {
+                name: Statuses.STATUS_GAME,
+                status: update.status,
+            },
+            data: update.data,
+        };
+    }
 }

@@ -48,6 +48,12 @@ export default class GameServer {
                 .catch(next);
         });
 
+        this.socket.app.get('/game/status', (_req: Request, res: Response, next: NextFunction) => {
+            this.controller.getGameStatus()
+                .then(status => res.status(200).json(status))
+                .catch(next);
+        });
+
         this.socket.app.put('/tickets/place', (req: Request, res: Response, next: NextFunction) => {
             this.controller.placeBet(req.body)
                 .then(ticket => res.status(201).json({

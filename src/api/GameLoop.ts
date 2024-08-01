@@ -45,6 +45,10 @@ export default class GameLoop extends EventEmitter {
         return this.#updates.get(updateName)?.data;
     }
 
+    getUpdate(updateName: string) {
+        return this.#updates.get(updateName);
+    }
+
     async init() {
         const raceNum = await this.store.getAllRaceNumbers();
         let isNew = false;
@@ -71,8 +75,10 @@ export default class GameLoop extends EventEmitter {
             return new Promise(res => {
 
                 setTimeout(async () => {
-                    this.race.run();
-                    await this.save();
+                    if (!this.race.hasResult()) {
+                        this.race.run();
+                        await this.save();
+                    }
 
                     res(undefined);
                 }, timeout);
@@ -106,7 +112,7 @@ export default class GameLoop extends EventEmitter {
             await new Promise(res => setTimeout(res, DELAY_AFTER_END));
         };
 
-        if (this.race.isClosed() && !this.race.hasResult()) {
+        if (this.race.isClosed()) {
             this.#emmitUpdate(Statuses.BETS_CLOSED);
             await startResultTimeout(OLD_GAME_DELAY);
         } else {
